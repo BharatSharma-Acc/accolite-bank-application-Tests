@@ -9,10 +9,11 @@ using Xunit;
 using accolite_bank_application.Controllers;
 using Microsoft.AspNetCore.Mvc;
 using FluentAssertions;
+using accolite_bank_application.Constants;
 
 namespace accolite_bank_application.Tests
 {
-    public class UnitTests
+    public class ServiceUnitTests
     {
 
         private readonly IFixture _fixture;
@@ -20,7 +21,7 @@ namespace accolite_bank_application.Tests
         private readonly AccountController _controller;
 
 
-        public UnitTests()
+        public ServiceUnitTests()
         {
             _fixture = new Fixture();
             
@@ -68,7 +69,7 @@ namespace accolite_bank_application.Tests
         }
 
         [Fact]
-        public async Task DepositTest()
+        public async Task UpdateAccount_Success_WhenValidTransType_Deposit_Present()
         {
 
             //Arrange
@@ -80,22 +81,22 @@ namespace accolite_bank_application.Tests
             decimal amount = 50;
 
 
-            _accountServiceMock.Setup(x => x.UpdateAccount(accountNumber, amount, "Deposit")).ReturnsAsync(transData);
+            _accountServiceMock.Setup(x => x.UpdateAccount(accountNumber, amount, UtilsConstants.TRANSTYPE_DEPOSIT)).ReturnsAsync(transData);
 
             //Act
-            var result = await _controller.UpdateAccount(accountNumber, amount, "Deposit");
+            var result = await _controller.UpdateAccount(accountNumber, amount, UtilsConstants.TRANSTYPE_DEPOSIT);
 
 
             var transResult = Assert.IsType<OkObjectResult>(result);
-            var trans1 = (TransactionModel)transResult.Value;
+            var transModel = (TransactionModel)transResult.Value;
 
-            Assert.Equal(trans1.postBalance, transData.postBalance);
+            Assert.Equal(transModel.postBalance, transData.postBalance);
 
 
         }
 
         [Fact]
-        public async Task WithdrawTest()
+        public async Task UpdateAccount_Success_WhenValidTransType_Withdraw_Present()
         {
 
             //Arrange
@@ -107,10 +108,10 @@ namespace accolite_bank_application.Tests
             decimal amount = 50;
 
 
-            _accountServiceMock.Setup(x => x.UpdateAccount(accountNumber, amount, "Withdraw")).ReturnsAsync(transData);
+            _accountServiceMock.Setup(x => x.UpdateAccount(accountNumber, amount, UtilsConstants.TRANSTYPE_WITHDRAW)).ReturnsAsync(transData);
 
             //Act
-            var result = await _controller.UpdateAccount(accountNumber, amount, "Withdraw");
+            var result = await _controller.UpdateAccount(accountNumber, amount, UtilsConstants.TRANSTYPE_WITHDRAW);
 
 
             var transResult = Assert.IsType<OkObjectResult>(result);
@@ -122,7 +123,7 @@ namespace accolite_bank_application.Tests
         }
 
         [Fact]
-        public async Task BusinessRule1Test()
+        public async Task UpdateAccount_Fail_When_Withdraw_MaxLimitBreach()
         {
 
             //Arrange
@@ -134,20 +135,20 @@ namespace accolite_bank_application.Tests
             int accountNumber = 50010;
             decimal amount = 10001;
 
-            _accountServiceMock.Setup(x => x.UpdateAccount(accountNumber, amount, "Withdraw")).ReturnsAsync(transData);
+            _accountServiceMock.Setup(x => x.UpdateAccount(accountNumber, amount, UtilsConstants.TRANSTYPE_WITHDRAW)).ReturnsAsync(transData);
 
 
             //Act
-            var result = await _controller.UpdateAccount(accountNumber, amount, "Withdraw");
+            var result = await _controller.UpdateAccount(accountNumber, amount, UtilsConstants.TRANSTYPE_WITHDRAW);
 
 
             var transResult = Assert.IsType<OkObjectResult>(result);
             var trans1 = (TransactionModel)transResult.Value;
-            trans1.message.StartsWith("Invalid Transaction: Withdrawl amount is greater than $10000");
+            trans1.message.StartsWith(ErrorConstants.TRANS_MAXLIMIT_BREACH_MESSAGE);
         }
 
         [Fact]
-        public async Task BusinessRule2Test()
+        public async Task UpdateAccount_Fail_When_Withdraw_MinBalBreach()
         {
 
             //Arrange
@@ -159,16 +160,16 @@ namespace accolite_bank_application.Tests
             int accountNumber = 50010;
             decimal amount = 150;
 
-            _accountServiceMock.Setup(x => x.UpdateAccount(accountNumber, amount, "Withdraw")).ReturnsAsync(transData);
+            _accountServiceMock.Setup(x => x.UpdateAccount(accountNumber, amount, UtilsConstants.TRANSTYPE_WITHDRAW)).ReturnsAsync(transData);
 
 
             //Act
-            var result = await _controller.UpdateAccount(accountNumber, amount, "Withdraw");
+            var result = await _controller.UpdateAccount(accountNumber, amount, UtilsConstants.TRANSTYPE_WITHDRAW);
 
 
             var transResult = Assert.IsType<OkObjectResult>(result);
             var trans1 = (TransactionModel)transResult.Value;
-            trans1.message.StartsWith("Invalid Transaction : Withdrawl amount will make available balance below mandatory limit of $100");
+            trans1.message.StartsWith(ErrorConstants.TRANS_MINBAL_BREACH_MESSAGE);
 
 
         }
